@@ -1,0 +1,39 @@
+{
+  "name": "alloy-pathfinder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve --mode local",
+    "build": "vue-cli-service build --mode dev",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "animate.css": "^3.7.0",
+    "axios": "^0.18.0",
+    "fs": "0.0.1-security",
+    "md5": "^2.2.1",
+    "moment": "^2.24.0",
+    "vue": "^2.5.17",
+    "vue-class-component": "^6.0.0",
+    "vue-property-decorator": "^7.0.0",
+    "vue-router": "^3.0.1",
+    "vuetify": "^1.2.6",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.4",
+    "@vue/cli-plugin-babel": "^3.2.0",
+    "@vue/cli-plugin-typescript": "^3.7.0",
+    "@vue/cli-plugin-unit-mocha": "^3.2.0",
+    "@vue/cli-service": "^3.7.0",
+    "@vue/test-utils": "^1.0.0-beta.26",
+    "aws-sdk": "^2.418.0",
+    "chai": "^4.2.0",
+    "glob": "^7.1.3",
+    "mime-types": "^2.1.22",
+    "tslint-no-unused-expression-chai": "^0.1.4",
+    "typescript": "^3.1.6",
+    "vue-template-compiler": "^2.5.17"
+  }
+}
