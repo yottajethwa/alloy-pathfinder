@@ -10,7 +10,7 @@
        <v-btn @click='scenario2()' dark :color="scenario===2 ? 'green' : 'blue'">Scenario 2</v-btn>
        <v-btn @click='scenario3()' dark :color="scenario===3 ? 'green' : 'blue'">Scenario 3</v-btn>
        <v-btn @click='scenario4()' dark :color="scenario===4 ? 'green' : 'blue'">Scenario 4</v-btn>
-       <v-btn icon @click='toggleMode()' outline left>{{mode}}</v-btn>
+       <v-btn @click='hideShowInterfaces()' dark color="orange">{{interfaces ? "Hide Interfaces" : "Show Interfaces"}}</v-btn>
        <v-card-text class='title font-weight-light'>{{scenarioText}}</v-card-text>
       </v-card>
       <v-card>
@@ -62,36 +62,15 @@
               </v-avatar>
               
               <v-avatar v-else :color='attColour(att)' tile>
-                <v-toolbar-title v-if="att.type !== 'Link'" class='white--text'><b>{{attIcon(att)}}</b></v-toolbar-title>
+                <v-toolbar-title v-if="!att.type.includes('Link')" class='white--text'><b>{{attIcon(att)}}</b></v-toolbar-title>
                 <v-icon v-else color='white'>link</v-icon>
               </v-avatar>
               <v-list-tile-content class='pl-3'>
-                <v-list-tile-title v-html='att.name'></v-list-tile-title>
+                <v-list-tile-title>{{attName(att)}}</v-list-tile-title>
                 <v-list-tile-sub-title>{{attSubtitle(att)}}</v-list-tile-sub-title>
               </v-list-tile-content>
               <v-spacer></v-spacer>
               <v-icon v-if="att.type === 'Link'" right>keyboard_arrow_right</v-icon>
-            </v-list-tile>
-          </template>
-
-          <template v-for='(parent, index) in parents'>
-            <v-list-tile
-              :key='index + 1000'
-              avatar
-               @click='selectParentLink(parent)'
-            >
-              <v-avatar dark :color='parentColour(parent)' text-color='white' tile>
-                <v-icon color='white'>
-                  arrow_upward
-                </v-icon>
-              </v-avatar>
-
-              <v-list-tile-content class='pl-3'>
-                <v-list-tile-title>{{parentTitle(parent)}}</v-list-tile-title>
-                <v-list-tile-sub-title>{{parentSubtitle(parent)}}</v-list-tile-sub-title>
-              </v-list-tile-content>
-              <v-spacer></v-spacer>
-              <v-icon right>keyboard_arrow_right</v-icon>
             </v-list-tile>
           </template>
         </v-list>
@@ -139,13 +118,11 @@ export default {
     },
     attributes() {
       if (this.sourceDodi) {
-        let atts = Store.blueprints().getAttributes(this.sourceDodi);
-        if (Store.blueprints().getMode()) {
-          atts = atts.concat(Store.blueprints().getExtAttributes(this.sourceDodi));
-        }
+        let atts = Store.blueprints().getPrimitiveAttributes(this.sourceDodi);
+        atts = atts.concat(Store.blueprints().getLinks(this.sourceDodi, !this.interfaces));
         if (this.search) {
           return atts.filter((a) => 
-            a.name.toLowerCase().includes(this.search.toLowerCase()) ||
+            this.attName(a).toLowerCase().includes(this.search.toLowerCase()) ||
             this.attSubtitle(a).toLowerCase().includes(this.search.toLowerCase()) 
           ).map((a) => {
               a.selected = this.isSelected(a.code);
@@ -159,22 +136,6 @@ export default {
       }
       return [];
     },
-    parents() {
-      if (this.sourceDodi) {
-        let pars = Store.blueprints().getParents(this.sourceDodi);
-        if (Store.blueprints().getMode()) {
-          pars = pars.concat(Store.blueprints().getExtParents(this.sourceDodi));
-        }
-        if (this.search) {
-          return pars.filter((p) => 
-            this.parentTitle(p).toLowerCase().includes(this.search.toLowerCase()) ||
-            this.parentSubtitle(p).toLowerCase().includes(this.search.toLowerCase()) 
-          );
-        }
-        return pars;
-      }
-      return [];
-    },
     names() {
       return Store.blueprints().getDodis().map((d) => d.name);
     },
@@ -183,6 +144,9 @@ export default {
     },
     mode() {
       return Store.blueprints().getMode() ? 'A' : 'B';
+    },
+    interfaces() {
+      return Store.blueprints().getInterfaces();
     },
   },
   methods: {
@@ -195,7 +159,6 @@ export default {
     backValid() {
       return Store.blueprints().getPath().length > 1;
     },
-
     getDodiName() {
       if(!this.sourceDodi) {
         return 'None';
@@ -206,15 +169,14 @@ export default {
       }
       return dodi.name + ' Design';
     },
-    attSubtitle(attribute) {
-      if(attribute.type === 'Link') {
+    attName(attribute) {
+      if(attribute.type === 'Multiple Links') {
         const dodi = Store.blueprints().getDodiByCode(attribute.linksTo);
-        let suffix = ' Design';
-        if (dodi.interface) {
-          suffix = ' Interface';
-        }
-        return 'Link to ' + dodi.name + suffix;
+        return dodi ? dodi.name : 'Unknown';
       }
+      return attribute.name;
+    },
+    attSubtitle(attribute) {
       return attribute.type;
     },
     attIcon(attribute) {
@@ -227,13 +189,10 @@ export default {
       if(attribute.type === 'Boolean') {
         return 'B';
       }
-      if(attribute.type === 'Link') {
-        return 'L';
-      }
       return 'A';
     },
     attColour(attribute) {
-      if(attribute.type === 'Link') {
+      if(attribute.type.startsWith('Link')) {
         const dodi = Store.blueprints().getDodiByCode(attribute.linksTo);
         if(dodi.interface) {
           return 'orange';
@@ -246,26 +205,11 @@ export default {
       }
       return dodi.colour;
     },
-    parentColour(parent) {
-      const dodi = Store.blueprints().getDodiByCode(parent.code);
-      if(dodi.interface) {
-        return 'orange';
-      }
-      return dodi.colour;
-    },
-    parentTitle(parent) {
-      const dodi = Store.blueprints().getDodiByCode(parent.code);
-      const suffix = dodi.interface ? ' Interface' : ' Design'
-      return Store.blueprints().getDodiByCode(parent.code).name + suffix;
-    },
-    parentSubtitle(parent) {
-      return 'Link via ' + parent.name;
-    },
     selectDodiLink(attribute) {
+      console.log(attribute);
       this.search = '';
       if(!attribute.linksTo) {
         if (!this.isSelected(attribute.code)) {
-          console.log(attribute.code, this.destination);
           if (attribute.code === this.destination) {
             Store.blueprints().stopScenario();
             Store.blueprints().showDoneDialog();
@@ -277,9 +221,8 @@ export default {
         return;
       }
       const dodi = Store.blueprints().getDodiByCode(attribute.linksTo);
-      if (dodi.interface && !Store.blueprints().getMode()) {
-        Store.blueprints().setPathAtt(attribute.code);
-        Store.blueprints().setParentPath(null);
+      if (attribute.code === "multiCode") {
+        Store.blueprints().setDestinationDodi(attribute.linksTo);
         Store.blueprints().showDialog();
         return;
       }
@@ -288,20 +231,13 @@ export default {
     isSelected(attCode) {
       return this.selected.find((code) => attCode === code);
     },
-    selectParentLink(parent) {
-      this.search = '';
-      const dodi = Store.blueprints().getDodiByCode(parent.code);
-      if (dodi.interface && !Store.blueprints().getMode()) {
-        Store.blueprints().setPathAtt(null);
-        Store.blueprints().setParentPath(parent.attCode);
-        Store.blueprints().showDialog();
-        return;
-      }
-      this.sourceDodi = dodi.name;
-    },
     toggleMode() {
       const mode = Store.blueprints().getMode();
       Store.blueprints().setMode(!mode);
+    },
+    hideShowInterfaces() {
+      const interfaces = Store.blueprints().getInterfaces();
+      Store.blueprints().setInterfaces(!interfaces);
     },
     pathRatio() {
       return Store.blueprints().getPath().length + ':' + this.pathLength;

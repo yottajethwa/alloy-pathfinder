@@ -57,6 +57,14 @@ export class BlueprintsService {
     this.store.commit('setMode', mode);
   }
 
+  public getInterfaces() {
+    return this.state.interfaces;
+  }
+
+  public setInterfaces(interfaces: boolean) {
+    this.store.commit('setInterfaces', interfaces);
+  }
+
   public getPathAtt() {
     return this.state.pathAttCode;
   }
@@ -64,6 +72,15 @@ export class BlueprintsService {
   public setPathAtt(pathAttCode: string) {
     this.store.commit('setPathAttributeCode', pathAttCode);
   }
+
+  public getDestinationDodi() {
+    return this.state.destinationDodi;
+  }
+
+  public setDestinationDodi(destinationDodi: string) {
+    this.store.commit('setDestinationDodi', destinationDodi);
+  }
+
 
   public getParentPath() {
     return this.state.parentPathCode;
@@ -177,6 +194,85 @@ export class BlueprintsService {
       return [];
     }
     return dodi.attributes;
+  }
+
+  public getPrimitiveAttributes(code: string): AttributeState[] {
+    const dodi = this.state.dodis.find((d) => d.code === code);
+    if (!dodi) {
+      return [];
+    }
+    return dodi.attributes.concat(dodi.extraAttributes).filter((att) => att.type !== 'Link');
+  }
+
+  public getLinks(code: string): AttributeState[] {
+    const dodi = this.state.dodis.find((d) => d.code === code);
+    if (!dodi) {
+      return [];
+    }
+    const linkAtts = dodi.attributes.concat(dodi.extraAttributes).filter((att) =>
+      att.type === 'Link');
+    dodi.parents.concat(dodi.extraParents).map((parentLink) => {
+      linkAtts.push({
+        name: parentLink.name,
+        code: parentLink.attCode,
+        type: 'Link',
+        linksTo: parentLink.code,
+      });
+    });
+    let destinationCodes: string[] = [... new Set(linkAtts.map((l) => l.linksTo!))];
+    if (!this.getInterfaces()) {
+      destinationCodes = destinationCodes.filter((c) => {
+        const d = this.getDodiByCode(c);
+        return d ? !d.interface : false;
+      });
+    }
+    // if the links go to the same code, consolidate the links into one
+    return destinationCodes.map((destCode) => {
+      const links = linkAtts.filter((la) => la.linksTo === destCode);
+      if (links.length === 1) {
+        return links[0];
+      }
+      return {
+        name: 'Multiple Links',
+        code: 'multiCode',
+        type: 'Multiple Links',
+        linksTo: destCode,
+      };
+    });
+  }
+
+  public getLinkOptions(code: string): AttributeState[] {
+    const dodi = this.state.dodis.find((d) => d.code === code);
+    if (!dodi) {
+      return [];
+    }
+    const destinationDodiCode = this.getDestinationDodi();
+    if (!destinationDodiCode) {
+      return [];
+    }
+    const destinationDodi = this.getDodiByCode(destinationDodiCode);
+    if (!destinationDodi) {
+      return [];
+    }
+
+    const linkAtts = dodi.attributes.concat(dodi.extraAttributes)
+      .filter((att) => att.type === 'Link')
+      .map((a) => {
+        a.description = 'Link to ' + destinationDodi.name + ' from ' + dodi.name;
+        return a;
+      });
+
+    dodi.parents.concat(dodi.extraParents)
+    .map((parentLink) => {
+      linkAtts.push({
+        name: parentLink.name,
+        code: parentLink.attCode,
+        type: 'Link',
+        linksTo: parentLink.code,
+        description: 'Link from ' + destinationDodi.name + ' to ' + dodi.name,
+      });
+    });
+    return linkAtts.filter((la) => la.linksTo === destinationDodiCode);
   }
 
   public getParents(code: string): ParentState[] {

@@ -8,12 +8,15 @@ export interface BlueprintsState {
   doneDialog: boolean;
   scenarioStart: number;
   scenarioEnd: number;
+  interfaces: boolean;
+  destinationDodi: string | null;
 }
 export interface AttributeState {
   code: string;
   name: string;
   type: string;
   linksTo?: string;
+  description?: string;
 }
 
 export interface ParentState {

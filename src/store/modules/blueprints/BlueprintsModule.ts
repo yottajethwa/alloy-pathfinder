@@ -19,6 +19,8 @@ export const BlueprintsModule: Module<
     doneDialog: false,
     scenarioStart: Date.now(),
     scenarioEnd: Date.now(),
+    interfaces: false,
+    destinationDodi: null,
   },
   mutations: {
     setDodis,
@@ -30,6 +32,8 @@ export const BlueprintsModule: Module<
     setParentPathCode,
     startScenario,
     stopScenario,
+    setInterfaces,
+    setDestinationDodi,
   },
   actions: {
     addPath,
@@ -65,6 +69,13 @@ function setDialog(
   state.dialog = dialog;
 }
 
+function setInterfaces(
+  state: BlueprintsState,
+  interfaces: boolean,
+) {
+  state.interfaces = interfaces;
+}
+
 function setDoneDialog(
   state: BlueprintsState,
   doneDialog: boolean,
@@ -77,6 +88,13 @@ function setPathAttributeCode(
   pathAttCode: string,
 ) {
   state.pathAttCode = pathAttCode;
+}
+
+function setDestinationDodi(
+  state: BlueprintsState,
+  destinationDodi: string,
+) {
+  state.destinationDodi = destinationDodi;
 }
 
 function setParentPathCode(
